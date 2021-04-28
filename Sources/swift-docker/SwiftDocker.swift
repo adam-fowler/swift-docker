@@ -70,8 +70,7 @@ struct SwiftDocker {
 
     func runDocker() throws {
         var args = ["docker", "build", "-f", ".build/Dockerfile"]
-        if let testCommand = self.command as? SwiftDockerCommand.Test,
-           let tag = testCommand.tag {
+        if let tag = command.options.tag {
             args += ["-t", tag]
         } else {
             let path = FileManager.default.currentDirectoryPath.split(separator: "/")

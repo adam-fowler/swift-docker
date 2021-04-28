@@ -24,6 +24,9 @@ struct SwiftDockerCommand: ParsableCommand {
 
         @Flag(name: .shortAndLong, help: "Output Dockerfile instead of building image")
         var output: Bool = false
+
+        @Option(name: .shortAndLong, help: "Specify repository and tag for generated docker image")
+        var tag: String?
     }
 
     struct Build: ParsableCommand, SwiftDockerOptions {
@@ -42,9 +45,6 @@ struct SwiftDockerCommand: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "Test docker image")
 
         @OptionGroup var options: Options
-
-        @Option(name: .shortAndLong, help: "Specify repository and tag for generated docker image")
-        var tag: String?
 
         var operation: BuildOperation { .test }
 
