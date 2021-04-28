@@ -14,15 +14,10 @@ import HummingbirdMustache
 import PackageModel
 
 struct SwiftDocker {
-    let command: SwiftDockerCommand
+    let command: SwiftDockerOptions
     let template: HBMustacheTemplate
 
-    enum BuildOperation: String {
-        case build
-        case test
-    }
-
-    init(command: SwiftDockerCommand) throws {
+    init(command: SwiftDockerOptions) throws {
         self.command = command
         self.template = try .init(string: Self.dockerfileTemplate)
     }
@@ -68,14 +63,15 @@ struct SwiftDocker {
             let options: String
             let executable: String?
         }
-        let context = RenderContext(image: command.image, operation: .test, options: "", executable: executable)
+        let context = RenderContext(image: command.options.image, operation: self.command.operation, options: "", executable: executable)
         let dockerfile = self.template.render(context)
         try dockerfile.write(toFile: filename, atomically: true, encoding: .utf8)
     }
 
     func runDocker() throws {
         var args = ["docker", "build", "-f", ".build/Dockerfile"]
-        if let tag = command.tag {
+        if let testCommand = self.command as? SwiftDockerCommand.Test,
+           let tag = testCommand.tag {
             args += ["-t", tag]
         } else {
             let path = FileManager.default.currentDirectoryPath.split(separator: "/")
@@ -107,12 +103,12 @@ struct SwiftDocker {
                     executable = manifest.products.first?.name
                 }
                 var filename: String = ".build/Dockerfile"
-                if self.command.output {
+                if self.command.options.output {
                     filename = "Dockerfile"
                 }
                 try self.renderDockerfile(executable: executable, filename: filename)
                 // only run docker if not outputting Dockerfile
-                if self.command.output == false {
+                if self.command.options.output == false {
                     try self.runDocker()
                 }
             } catch {
