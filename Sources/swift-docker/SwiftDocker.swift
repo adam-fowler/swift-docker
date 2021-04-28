@@ -12,9 +12,14 @@ struct SwiftDocker {
     let command: SwiftDockerCommand
     let library: HBMustacheLibrary
 
+    enum BuildOperation: String {
+        case build
+        case test
+    }
+
     init(command: SwiftDockerCommand) throws {
         self.command = command
-        self.library = try .init(directory: Bundle.module.resourcePath!)
+        self.library = try .init(directory: Bundle.main.resourcePath!)
     }
 
     @discardableResult
@@ -38,13 +43,19 @@ struct SwiftDocker {
 
     }
 
+    func outputDockerIgnore() throws {
+        let dockerIgnore = ".build/x86_64-apple-macosx"
+        try dockerIgnore.write(toFile: ".dockerignore", atomically: true, encoding: .utf8)
+    }
+
     func renderDockerfile(executable: String?) throws {
         struct RenderContext {
             let image: String
+            let operation: BuildOperation
             let options: String
             let executable: String?
         }
-        let context = RenderContext(image: command.image, options: "", executable: executable)
+        let context = RenderContext(image: command.image, operation: .test, options: "", executable: executable)
         let dockerfile = self.library.render(context, withTemplate: "Dockerfile")
         try dockerfile?.write(toFile: ".build/Dockerfile", atomically: true, encoding: .utf8)
     }
@@ -67,6 +78,8 @@ struct SwiftDocker {
         let d = DispatchGroup()
         d.enter()
 
+        try outputDockerIgnore()
+        
         try SPMPackageLoader().load(FileManager.default.currentDirectoryPath) { result in
             do {
                 let manifest: Manifest

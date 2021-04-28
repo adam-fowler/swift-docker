@@ -12,7 +12,7 @@ RUN swift package resolve
 # Copy entire repo into container
 COPY . .
 
-RUN swift build {{options}}
+RUN swift {{operation}} {{options}}
 
 {{#executable}}
 # Switch to the staging area
