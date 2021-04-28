@@ -70,14 +70,17 @@ struct SwiftDocker {
         try dockerfile.write(toFile: filename, atomically: true, encoding: .utf8)
     }
 
-    func runDocker() throws {
+    func runDocker(isExecutable: Bool) throws {
         var args = ["docker", "build", "-f", ".build/Dockerfile"]
         if let tag = command.tag {
             args += ["-t", tag]
         } else {
-            let path = FileManager.default.currentDirectoryPath.split(separator: "/")
-            if let tag = path.last.map({ String($0) }) {
-                args += ["-t", tag]
+            // if isExecutable automatically tag the image with the folder name
+            if isExecutable {
+                let path = FileManager.default.currentDirectoryPath.split(separator: "/")
+                if let tag = path.last.map({ String($0) }) {
+                    args += ["-t", tag]
+                }
             }
         }
         args.append(".")
@@ -111,7 +114,7 @@ struct SwiftDocker {
                 try self.renderDockerfile(executable: executable, filename: filename)
                 // only run docker if not outputting Dockerfile
                 if self.command.output == false {
-                    try self.runDocker()
+                    try self.runDocker(isExecutable: executable != nil)
                 }
             } catch {
                 print("\(error)")
