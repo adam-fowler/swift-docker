@@ -22,7 +22,7 @@ extension SwiftDocker {
     WORKDIR /staging
 
     # Copy main executable to staging area
-    RUN cp "$(swift build --package-path /build -c release --show-bin-path)/Server" ./
+    RUN cp "$(swift build --package-path /build -c release --show-bin-path)/{{.}}" ./
 
     # ================================
     # Run image
@@ -41,8 +41,8 @@ extension SwiftDocker {
     # Ensure all further commands run as the swiftdocker user
     USER swiftdocker:swiftdocker
 
-    # Start the Vapor service when the image is run, default to listening on 8080 in production environment
-    ENTRYPOINT ["./{{executable}}"]
+    # Run the executable when the image is run
+    ENTRYPOINT ["./{{.}}"]
     CMD
 
     {{/executable}}
