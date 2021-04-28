@@ -14,10 +14,10 @@ import HummingbirdMustache
 import PackageModel
 
 struct SwiftDocker {
-    let command: SwiftDockerOptions
+    let command: SwiftDockerCommand
     let template: HBMustacheTemplate
 
-    init(command: SwiftDockerOptions) throws {
+    init(command: SwiftDockerCommand) throws {
         self.command = command
         self.template = try .init(string: Self.dockerfileTemplate)
     }
@@ -25,6 +25,7 @@ struct SwiftDocker {
     @discardableResult
     func shell(_ args: [String], returnStdOut: Bool) -> (Int32, String?) {
         let task = Process()
+        // trap signal so they can be passed onto shell command
         let intSignal = trap(signal: .INT) { _ in
             task.interrupt()
         }
@@ -60,17 +61,17 @@ struct SwiftDocker {
         struct RenderContext {
             let image: String
             let operation: BuildOperation
-            let options: String
+            let options: String?
             let executable: String?
         }
-        let context = RenderContext(image: command.options.image, operation: self.command.operation, options: "", executable: executable)
+        let context = RenderContext(image: command.image, operation: self.command.operation, options: command.swiftOptions.joined(separator: " "), executable: executable)
         let dockerfile = self.template.render(context)
         try dockerfile.write(toFile: filename, atomically: true, encoding: .utf8)
     }
 
     func runDocker() throws {
         var args = ["docker", "build", "-f", ".build/Dockerfile"]
-        if let tag = command.options.tag {
+        if let tag = command.tag {
             args += ["-t", tag]
         } else {
             let path = FileManager.default.currentDirectoryPath.split(separator: "/")
@@ -102,12 +103,12 @@ struct SwiftDocker {
                     executable = manifest.products.first?.name
                 }
                 var filename: String = ".build/Dockerfile"
-                if self.command.options.output {
+                if self.command.output {
                     filename = "Dockerfile"
                 }
                 try self.renderDockerfile(executable: executable, filename: filename)
                 // only run docker if not outputting Dockerfile
-                if self.command.options.output == false {
+                if self.command.output == false {
                     try self.runDocker()
                 }
             } catch {

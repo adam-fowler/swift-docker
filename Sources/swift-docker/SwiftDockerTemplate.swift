@@ -15,7 +15,7 @@ extension SwiftDocker {
     # Copy entire repo into container
     COPY . .
 
-    RUN swift {{operation}} {{options}}
+    RUN swift {{operation}} {{#target}}{{.}} {{/target}}{{options}}
 
     {{#executable}}
     # Switch to the staging area
