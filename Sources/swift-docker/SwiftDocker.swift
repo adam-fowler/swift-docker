@@ -53,6 +53,7 @@ struct SwiftDocker {
     }
 
     func writeDockerIgnore() throws {
+        guard !FileManager.default.fileExists(atPath: ".dockerignore") else { return }
         let dockerIgnore = ".build/x86_64-apple-macosx"
         try dockerIgnore.write(toFile: ".dockerignore", atomically: true, encoding: .utf8)
     }
