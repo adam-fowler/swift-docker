@@ -4,6 +4,11 @@
 //
 //  Created by Adam Fowler on 27/04/2021.
 //
+#if os(macOS)
+import Darwin
+#else
+import Glibc
+#endif
 import Foundation
 import HummingbirdMustache
 import PackageModel
@@ -25,6 +30,12 @@ struct SwiftDocker {
     @discardableResult
     func shell(_ args: [String], returnStdOut: Bool) -> (Int32, String?) {
         let task = Process()
+        let intSignal = trap(signal: .INT) { _ in
+            task.interrupt()
+        }
+        let termSignal = trap(signal: .TERM) { _ in
+            task.terminate()
+        }
         task.launchPath = "/usr/bin/env"
         task.arguments = args
         let pipe = Pipe()
@@ -34,13 +45,15 @@ struct SwiftDocker {
         task.launch()
         task.waitUntilExit()
 
+        intSignal.cancel()
+        termSignal.cancel()
+
         var output: String?
         if returnStdOut {
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             output = String(decoding: data, as: Unicode.UTF8.self)
         }
         return (task.terminationStatus, output)
-
     }
 
     func writeDockerIgnore() throws {
@@ -109,5 +122,48 @@ struct SwiftDocker {
             d.leave()
         }
         d.wait()
+    }
+}
+
+extension SwiftDocker {
+    public struct Signal: Equatable, CustomStringConvertible {
+        internal var rawValue: CInt
+
+        public static let TERM = Signal(rawValue: SIGTERM)
+        public static let INT = Signal(rawValue: SIGINT)
+        public static let USR1 = Signal(rawValue: SIGUSR1)
+        public static let USR2 = Signal(rawValue: SIGUSR2)
+        public static let HUP = Signal(rawValue: SIGHUP)
+
+        // for testing
+        internal static let ALRM = Signal(rawValue: SIGALRM)
+
+        public var description: String {
+            var result = "Signal("
+            switch self {
+            case Signal.TERM: result += "TERM, "
+            case Signal.INT: result += "INT, "
+            case Signal.ALRM: result += "ALRM, "
+            case Signal.USR1: result += "USR1, "
+            case Signal.USR2: result += "USR2, "
+            case Signal.HUP: result += "HUP, "
+            default: () // ok to ignore
+            }
+            result += "rawValue: \(self.rawValue))"
+            return result
+        }
+    }
+
+    func trap(signal sig: Signal, handler: @escaping (Signal) -> Void, on queue: DispatchQueue = .global(), cancelAfterTrap: Bool = true) -> DispatchSourceSignal {
+        let signalSource = DispatchSource.makeSignalSource(signal: sig.rawValue, queue: queue)
+        signal(sig.rawValue, SIG_IGN)
+        signalSource.setEventHandler(handler: {
+            if cancelAfterTrap {
+                signalSource.cancel()
+            }
+            handler(sig)
+        })
+        signalSource.resume()
+        return signalSource
     }
 }
