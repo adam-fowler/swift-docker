@@ -28,9 +28,10 @@ mint install swift-docker
 
 | Option | Description |
 |---|---|
-|-i/--image | Select swift image to use|
-|-o/--output| Instead of running docker just output Dockerfile|
-|-t/--tag   | Tag docker output with tag|
+| -i/--image | Select swift image to use |
+| -n/--no-slim | swift-docker will automatically use a slim version of a docker image. This option disables this. |
+| -o/--output | Instead of running docker just output Dockerfile |
+| -t/--tag | Tag docker output with tag |
 
 By adding a `--` everything else after that in the command line will be added as an option to the swift test/build command in the docker file.
 ```
