@@ -43,12 +43,12 @@ struct SwiftDocker {
 
     }
 
-    func outputDockerIgnore() throws {
+    func writeDockerIgnore() throws {
         let dockerIgnore = ".build/x86_64-apple-macosx"
         try dockerIgnore.write(toFile: ".dockerignore", atomically: true, encoding: .utf8)
     }
 
-    func renderDockerfile(executable: String?) throws {
+    func renderDockerfile(executable: String?, filename: String) throws {
         struct RenderContext {
             let image: String
             let operation: BuildOperation
@@ -57,7 +57,7 @@ struct SwiftDocker {
         }
         let context = RenderContext(image: command.image, operation: .test, options: "", executable: executable)
         let dockerfile = self.template.render(context)
-        try dockerfile.write(toFile: ".build/Dockerfile", atomically: true, encoding: .utf8)
+        try dockerfile.write(toFile: filename, atomically: true, encoding: .utf8)
     }
 
     func runDocker() throws {
@@ -78,7 +78,7 @@ struct SwiftDocker {
         let d = DispatchGroup()
         d.enter()
 
-        try outputDockerIgnore()
+        try writeDockerIgnore()
         
         try SPMPackageLoader().load(FileManager.default.currentDirectoryPath) { result in
             do {
@@ -93,8 +93,15 @@ struct SwiftDocker {
                 if manifest.products.first?.type == .executable {
                     executable = manifest.products.first?.name
                 }
-                try self.renderDockerfile(executable: executable)
-                try self.runDocker()
+                var filename: String = ".build/Dockerfile"
+                if self.command.output {
+                    filename = "Dockerfile"
+                }
+                try self.renderDockerfile(executable: executable, filename: filename)
+                // only run docker if not outputting Dockerfile
+                if self.command.output == false {
+                    try self.runDocker()
+                }
             } catch {
                 print("\(error)")
             }
