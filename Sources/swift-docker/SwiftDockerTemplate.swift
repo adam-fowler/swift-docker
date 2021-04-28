@@ -27,7 +27,7 @@ extension SwiftDocker {
     # ================================
     # Run image
     # ================================
-    FROM {{image}}{{^no_slim}}-slim{{/no_slim}}
+    FROM {{image}}{{^noSlim}}-slim{{/noSlim}}
 
     # Create a swiftdocker user and group with /app as its home directory
     RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app swiftdocker

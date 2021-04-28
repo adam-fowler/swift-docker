@@ -64,8 +64,15 @@ struct SwiftDocker {
             let operation: BuildOperation
             let options: String?
             let executable: String?
+            let noSlim: Bool
         }
-        let context = RenderContext(image: command.image, operation: self.command.operation, options: command.swiftOptions.joined(separator: " "), executable: executable)
+        let context = RenderContext(
+            image: command.image,
+            operation: self.command.operation,
+            options: command.swiftOptions.joined(separator: " "),
+            executable: executable,
+            noSlim: command.noSlim
+        )
         let dockerfile = self.template.render(context)
         try dockerfile.write(toFile: filename, atomically: true, encoding: .utf8)
     }

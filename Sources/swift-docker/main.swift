@@ -20,6 +20,10 @@ struct SwiftDockerCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Specify repository and tag for generated docker image. Will default to directory name if not specified.")
     var tag: String?
 
+    /// name to tag docker image
+    @Flag(name: .shortAndLong, help: "Swift docker will automatically use a slim image for running, This will disable this.")
+    var noSlim: Bool = false
+
     /// build or test
     @Argument var operation: BuildOperation
 
