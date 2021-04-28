@@ -10,7 +10,6 @@ let package = Package(
         .executable(name: "swift-docker", targets: ["swift-docker"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.3.0"),
         .package(url: "https://github.com/hummingbird-project/hummingbird-mustache.git", from: "0.5.0"),
         .package(name: "SwiftPM", url: "https://github.com/apple/swift-package-manager.git", .branch("swift-5.4-RELEASE")),
@@ -21,8 +20,7 @@ let package = Package(
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "HummingbirdMustache", package: "hummingbird-mustache"),
-                .product(name: "NIO", package: "swift-nio"),
-                .product(name: "SwiftPM", package: "SwiftPM"),
+                .product(name: "SwiftPM-auto", package: "SwiftPM"),
             ],
             resources: [.process("templates")]
         ),

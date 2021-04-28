@@ -1,12 +1,5 @@
 FROM {{image}} as build
 
-# Install OS updates
-RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
-    && apt-get -q update \
-    && apt-get -q dist-upgrade -y \
-    && apt-get install -y libsqlite3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /build
 
 # First just resolve dependencies.
@@ -32,10 +25,6 @@ RUN cp "$(swift build --package-path /build -c release --show-bin-path)/Server" 
 # Run image
 # ================================
 FROM {{image}}{{^no_slim}}-slim{{/no_slim}}
-
-# Make sure all system packages are up to date.
-RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && \
-    apt-get -q update && apt-get -q dist-upgrade -y && rm -r /var/lib/apt/lists/*
 
 # Create a swiftdocker user and group with /app as its home directory
 RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app swiftdocker

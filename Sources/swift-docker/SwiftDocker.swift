@@ -72,7 +72,6 @@ struct SwiftDocker {
                 let manifest: Manifest
                 switch result {
                 case .failure(let error):
-                    print("SPM fail")
                     throw error
                 case .success(let m):
                     manifest = m
