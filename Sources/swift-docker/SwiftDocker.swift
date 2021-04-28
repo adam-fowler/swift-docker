@@ -84,6 +84,7 @@ struct SwiftDocker {
         shell(args, returnStdOut: false)
     }
 
+    /// Run SwiftDocker
     func run() throws {
         let d = DispatchGroup()
         d.enter()
@@ -123,7 +124,7 @@ struct SwiftDocker {
 }
 
 extension SwiftDocker {
-    public struct Signal: Equatable, CustomStringConvertible {
+    public struct Signal: Equatable {
         internal var rawValue: CInt
 
         public static let TERM = Signal(rawValue: SIGTERM)
@@ -134,23 +135,9 @@ extension SwiftDocker {
 
         // for testing
         internal static let ALRM = Signal(rawValue: SIGALRM)
-
-        public var description: String {
-            var result = "Signal("
-            switch self {
-            case Signal.TERM: result += "TERM, "
-            case Signal.INT: result += "INT, "
-            case Signal.ALRM: result += "ALRM, "
-            case Signal.USR1: result += "USR1, "
-            case Signal.USR2: result += "USR2, "
-            case Signal.HUP: result += "HUP, "
-            default: () // ok to ignore
-            }
-            result += "rawValue: \(self.rawValue))"
-            return result
-        }
     }
 
+    /// setup handlers for signals
     func trap(signal sig: Signal, handler: @escaping (Signal) -> Void, on queue: DispatchQueue = .global(), cancelAfterTrap: Bool = true) -> DispatchSourceSignal {
         let signalSource = DispatchSource.makeSignalSource(signal: sig.rawValue, queue: queue)
         signal(sig.rawValue, SIG_IGN)
