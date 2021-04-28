@@ -10,7 +10,7 @@ import PackageModel
 
 struct SwiftDocker {
     let command: SwiftDockerCommand
-    let library: HBMustacheLibrary
+    let template: HBMustacheTemplate
 
     enum BuildOperation: String {
         case build
@@ -19,7 +19,7 @@ struct SwiftDocker {
 
     init(command: SwiftDockerCommand) throws {
         self.command = command
-        self.library = try .init(directory: Bundle.main.resourcePath!)
+        self.template = try .init(string: Self.dockerfileTemplate)
     }
 
     @discardableResult
@@ -56,8 +56,8 @@ struct SwiftDocker {
             let executable: String?
         }
         let context = RenderContext(image: command.image, operation: .test, options: "", executable: executable)
-        let dockerfile = self.library.render(context, withTemplate: "Dockerfile")
-        try dockerfile?.write(toFile: ".build/Dockerfile", atomically: true, encoding: .utf8)
+        let dockerfile = self.template.render(context)
+        try dockerfile.write(toFile: ".build/Dockerfile", atomically: true, encoding: .utf8)
     }
 
     func runDocker() throws {

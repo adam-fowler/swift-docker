@@ -21,8 +21,7 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "HummingbirdMustache", package: "hummingbird-mustache"),
                 .product(name: "SwiftPM-auto", package: "SwiftPM"),
-            ],
-            resources: [.copy("templates")]
+            ]
         ),
         .testTarget(
             name: "swift-dockerTests",
