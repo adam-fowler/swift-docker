@@ -45,11 +45,11 @@ struct SwiftDockerCommand: ParsableCommand {
 
     /// ports to expose
     @Option(name: .shortAndLong, help: "Publish a container's port(s) to the host")
-    var publish: [String]
+    var publish: [String] = []
 
     /// environment variables to set while running
     @Option(name: .shortAndLong, help: "Set environment variables")
-    var env: [String]
+    var env: [String] = []
 
     /// build or test
     @Argument var operation: BuildOperation

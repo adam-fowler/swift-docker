@@ -25,7 +25,7 @@ extension SwiftDocker {
     WORKDIR /staging
 
     # Copy main executable to staging area
-    RUN cp "$(swift build --package-path /build {{#configuration}}-c {{.}} {{/configuration}}--show-bin-path)/{{.}}" ./
+    RUN cp "$(swift build --package-path /build {{#configuration}}-c {{.}} {{/configuration}}--show-bin-path)/{{executable}}" ./
 
     # ================================
     # Run image
@@ -45,7 +45,7 @@ extension SwiftDocker {
     USER swiftdocker:swiftdocker
 
     # Run the executable when the image is run
-    ENTRYPOINT ["./{{.}}"]
+    ENTRYPOINT ["./{{executable}}"]
     CMD []
 
     {{/executable}}
