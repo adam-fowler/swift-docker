@@ -32,8 +32,18 @@ mint install swift-docker
 | -n/--no-slim | swift-docker will automatically use a slim version of a docker image. This option disables this. |
 | -o/--output | Instead of running docker just output Dockerfile |
 | -t/--tag | Tag docker output with tag |
+| -c/--configuration | Set build configuration (debug or release) |
+| --product | Set product to build |
+| --target | Set target to build |
 
 By adding a `--` everything else after that in the command line will be added as an option to the swift test/build command in the docker file.
 ```
 swift docker test -- --enable-test-discovery
+```
+
+## Dockerfile Template
+
+It is not possible to create a Dockerfile template that supports all projects. Because of this there is an option to edit the template file used to create your Dockerfile. The following will save a local copy of the template file and open it up into a text editor for you to edit.  
+```
+swift docker edit
 ```
