@@ -178,13 +178,14 @@ class SwiftDocker {
     /// Run docker run
     /// - Parameter isExecutable: Are we building an executable
     func runDocker(tag: String) {
-        var args = ["docker", "run", tag]
+        var args = ["docker", "run"]
         for p in self.command.publish {
             args += ["-p", p]
         }
         for e in self.command.env {
             args += ["-e", e]
         }
+        args.append(tag)
         shell(args, returnStdOut: false)
     }
 
