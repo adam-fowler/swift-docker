@@ -39,6 +39,8 @@ mint install swift-docker
 | -c/--configuration | Set build configuration (debug or release) |
 | --product | Set product to build |
 | --target | Set target to build |
+| -e/-env | Set environment variable when running docker image |
+| -p/-publish | Publish port when running docker image |
 
 By adding a `--` everything else after that in the command line will be added as an option to the swift test/build command in the docker file.
 ```
