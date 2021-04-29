@@ -22,7 +22,7 @@ extension SwiftDocker {
     WORKDIR /staging
 
     # Copy main executable to staging area
-    RUN cp "$(swift build --package-path /build {{#options}}{{.}} {{/options}}--show-bin-path)/{{.}}" ./
+    RUN cp "$(swift build --package-path /build {{#configuration}}-c {{.}} {{/configuration}}--show-bin-path)/{{.}}" ./
 
     # ================================
     # Run image

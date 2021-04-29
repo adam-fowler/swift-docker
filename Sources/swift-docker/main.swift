@@ -8,6 +8,11 @@ enum BuildOperation: String, ExpressibleByArgument {
     case edit
 }
 
+enum BuildConfiguration: String, ExpressibleByArgument {
+    case debug
+    case release
+}
+
 struct SwiftDockerCommand: ParsableCommand {
     /// Docker image to use as basis for building image
     @Option(name: .shortAndLong, help: "Docker image to use")
@@ -24,6 +29,18 @@ struct SwiftDockerCommand: ParsableCommand {
     /// whether to use slim version of swift docker image
     @Flag(name: .shortAndLong, help: "Disable using of slim version of swift docker image for running.")
     var noSlim: Bool = false
+
+    /// build configuration
+    @Option(name: .shortAndLong, help: "Build configuration")
+    var configuration: BuildConfiguration?
+
+    /// product to build
+    @Option(name: .long, help: "Build the specified product")
+    var product: String?
+
+    /// target to build
+    @Option(name: .long, help: "Build the specified target")
+    var target: String?
 
     /// build or test
     @Argument var operation: BuildOperation

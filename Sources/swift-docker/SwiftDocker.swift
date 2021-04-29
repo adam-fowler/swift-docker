@@ -67,11 +67,12 @@ class SwiftDocker {
 
     func writeDockerIgnore() throws {
         guard !FileManager.default.fileExists(atPath: ".dockerignore") else { return }
-        let dockerIgnore = """
+        /*let dockerIgnore = """
             .build/x86_64-apple-macosx
             .build/release
             .build/debug
-            """
+            """*/
+        let dockerIgnore = ".build"
         try dockerIgnore.write(toFile: ".dockerignore", atomically: true, encoding: .utf8)
     }
 
@@ -101,13 +102,19 @@ class SwiftDocker {
             let image: String
             let operation: BuildOperation
             let options: String?
+            let configuration: BuildConfiguration?
             let executable: String?
             let noSlim: Bool
+        }
+        var options = command.swiftOptions.joined(separator: " ")
+        if let configuration = self.command.configuration {
+            options = "-c \(configuration) \(options)"
         }
         let context = RenderContext(
             image: command.image,
             operation: self.command.operation,
-            options: command.swiftOptions.joined(separator: " "),
+            options: options,
+            configuration: self.command.configuration,
             executable: executable,
             noSlim: command.noSlim
         )
