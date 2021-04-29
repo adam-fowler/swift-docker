@@ -6,6 +6,7 @@ enum BuildOperation: String, ExpressibleByArgument {
     case build
     case test
     case edit
+    case run
 }
 
 enum BuildConfiguration: String, ExpressibleByArgument {

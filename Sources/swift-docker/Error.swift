@@ -8,6 +8,7 @@
 enum SwiftDockerError: Error {
     case failedToCreateFolder(String)
     case failedToCreateFile(String)
+    case runRequiresAnExecutable
 }
 
 extension SwiftDockerError: CustomStringConvertible {
@@ -17,6 +18,8 @@ extension SwiftDockerError: CustomStringConvertible {
             return "Failed to create \(folder) folder"
         case .failedToCreateFile(let file):
             return "Failed to create \(file) file"
+        case .runRequiresAnExecutable:
+            return "swift docker run requires an executable"
         }
     }
 }

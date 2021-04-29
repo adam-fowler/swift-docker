@@ -142,9 +142,14 @@ class SwiftDocker {
             options = "-c \(configuration) \(options)"
         }
 
+        var operation = self.command.operation
+        // if we are wanting to run an executable use swift build to build it
+        if operation == .run {
+            operation = .build
+        }
         let context = RenderContext(
             image: command.image,
-            operation: self.command.operation,
+            operation: operation,
             options: options,
             configuration: self.command.configuration,
             executable: executable,
@@ -158,22 +163,21 @@ class SwiftDocker {
         }
     }
 
-    /// Run docker using Dockerfile
+    /// Run docker build using Dockerfile
     /// - Parameter isExecutable: Are we building an executable
-    func runDocker(isExecutable: Bool) {
+    func buildDocker(tag: String?) {
         var args = ["docker", "build", "-f", ".build/Dockerfile"]
-        if let tag = command.tag {
+        if let tag = tag {
             args += ["-t", tag]
-        } else {
-            // if isExecutable automatically tag the image with the folder name
-            if isExecutable {
-                let path = FileManager.default.currentDirectoryPath.split(separator: "/")
-                if let tag = path.last.map({ String($0) }) {
-                    args += ["-t", tag]
-                }
-            }
         }
         args.append(".")
+        shell(args, returnStdOut: false)
+    }
+
+    /// Run docker run
+    /// - Parameter isExecutable: Are we building an executable
+    func runDocker(tag: String) {
+        let args = ["docker", "run", tag]
         shell(args, returnStdOut: false)
     }
 
@@ -218,10 +222,31 @@ class SwiftDocker {
                 if self.command.output {
                     filename = "Dockerfile"
                 }
+
+                if self.command.operation == .run && executable == nil {
+                    throw SwiftDockerError.runRequiresAnExecutable
+                }
+
                 try self.renderDockerfile(executable: executable, filename: filename)
+
+                // get tag (either commandline option or if executable folder we are running in)
+                var tag: String?
+                if let tag2 = self.command.tag {
+                    tag = tag2
+                } else {
+                    if executable != nil {
+                        let path = FileManager.default.currentDirectoryPath.split(separator: "/")
+                        tag = path.last.map({ String($0) })
+                    }
+                }
+
                 // only run docker if not outputting Dockerfile
                 if self.command.output == false {
-                    self.runDocker(isExecutable: executable != nil)
+                    self.buildDocker(tag: tag)
+                }
+
+                if self.command.operation == .run, let tag = tag {
+                    self.runDocker(tag: tag)
                 }
             } catch {
                 print("\(error)")
