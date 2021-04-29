@@ -1,6 +1,9 @@
 
 extension SwiftDocker {
     static var dockerfileTemplate: String {"""
+    # ================================
+    # Build image
+    # ================================
     FROM {{image}} as build
 
     WORKDIR /build

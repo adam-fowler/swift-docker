@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  SPMPackageLoader.swift
 //  
 //
 //  Created by Adam Fowler on 28/04/2021.
