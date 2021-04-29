@@ -15,14 +15,14 @@ extension SwiftDocker {
     # Copy entire repo into container
     COPY . .
 
-    RUN swift {{operation}} {{#target}}{{.}} {{/target}}{{options}}
+    RUN swift {{operation}} {{options}}
 
     {{#executable}}
     # Switch to the staging area
     WORKDIR /staging
 
     # Copy main executable to staging area
-    RUN cp "$(swift build --package-path /build -c release --show-bin-path)/{{.}}" ./
+    RUN cp "$(swift build --package-path /build {{#options}}{{.}} {{/options}}--show-bin-path)/{{.}}" ./
 
     # ================================
     # Run image

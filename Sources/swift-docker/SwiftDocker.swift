@@ -13,13 +13,20 @@ import Foundation
 import HummingbirdMustache
 import PackageModel
 
-struct SwiftDocker {
+class SwiftDocker {
     let command: SwiftDockerCommand
-    let template: HBMustacheTemplate
+    var template: HBMustacheTemplate
 
     init(command: SwiftDockerCommand) throws {
         self.command = command
         self.template = try .init(string: Self.dockerfileTemplate)
+    }
+
+    func shellNoWait(_ args: [String]) {
+        let task = Process()
+        task.launchPath = "/usr/bin/env"
+        task.arguments = args
+        task.launch()
     }
 
     @discardableResult
@@ -52,10 +59,41 @@ struct SwiftDocker {
         return (task.terminationStatus, output)
     }
 
+    func createBuildFolder() throws {
+        if !FileManager.default.fileExists(atPath: ".build") {
+            try FileManager.default.createDirectory(atPath: ".build", withIntermediateDirectories: true)
+        }
+    }
+
     func writeDockerIgnore() throws {
         guard !FileManager.default.fileExists(atPath: ".dockerignore") else { return }
-        let dockerIgnore = ".build/x86_64-apple-macosx"
+        let dockerIgnore = """
+            .build/x86_64-apple-macosx
+            .build/release
+            .build/debug
+            """
         try dockerIgnore.write(toFile: ".dockerignore", atomically: true, encoding: .utf8)
+    }
+
+    func loadTemplate(_ name: String = "template") throws {
+        let filename = ".swiftdocker-\(name)"
+        let data: Data
+        do {
+            guard FileManager.default.fileExists(atPath: filename) else { return }
+            data = try Data(contentsOf: URL(fileURLWithPath: filename))
+            print("Using template \(filename)")
+        } catch {
+            return
+        }
+        let templateString = String(decoding: data, as: Unicode.UTF8.self)
+        self.template = try .init(string: templateString)
+    }
+
+    func editTemplate(_ name: String = "template") throws {
+        let filename = ".swiftdocker-\(name)"
+        guard !FileManager.default.fileExists(atPath: filename) else { return }
+        try Self.dockerfileTemplate.write(toFile: filename, atomically: true, encoding: .utf8)
+        shellNoWait(["open", filename])
     }
 
     func renderDockerfile(executable: String?, filename: String) throws {
@@ -99,6 +137,14 @@ struct SwiftDocker {
         let d = DispatchGroup()
         d.enter()
 
+        try loadTemplate()
+
+        if command.operation == .edit {
+            try editTemplate()
+            return
+        }
+
+        try createBuildFolder()
         try writeDockerIgnore()
         
         try SPMPackageLoader().load(FileManager.default.currentDirectoryPath) { result in

@@ -5,6 +5,7 @@ import Foundation
 enum BuildOperation: String, ExpressibleByArgument {
     case build
     case test
+    case edit
 }
 
 struct SwiftDockerCommand: ParsableCommand {
