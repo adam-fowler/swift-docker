@@ -16,7 +16,7 @@ enum BuildConfiguration: String, ExpressibleByArgument {
 struct SwiftDockerCommand: ParsableCommand {
     /// Docker image to use as basis for building image
     @Option(name: .shortAndLong, help: "Docker image to use")
-    var image: String = "swift:5.3"
+    var image: String = "swift:5.4"
 
     /// Output Dockerfile instead of build it
     @Flag(name: .shortAndLong, help: "Output Dockerfile instead of building image")
