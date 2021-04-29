@@ -66,19 +66,27 @@ class SwiftDocker {
 
     /// Create .build folder
     func createBuildFolder() throws {
-        if !FileManager.default.fileExists(atPath: ".build") {
-            try FileManager.default.createDirectory(atPath: ".build", withIntermediateDirectories: true)
+        do {
+            if !FileManager.default.fileExists(atPath: ".build") {
+                try FileManager.default.createDirectory(atPath: ".build", withIntermediateDirectories: true)
+            }
+        } catch {
+            throw SwiftDockerError.failedToCreateFolder(".build")
         }
     }
 
     /// Create .dockerignore file
     func writeDockerIgnore() throws {
-        guard !FileManager.default.fileExists(atPath: ".dockerignore") else { return }
-        let dockerIgnore = """
-            .build
-            .git
-            """
-        try dockerIgnore.write(toFile: ".dockerignore", atomically: true, encoding: .utf8)
+        do {
+            guard !FileManager.default.fileExists(atPath: ".dockerignore") else { return }
+            let dockerIgnore = """
+                .build
+                .git
+                """
+            try dockerIgnore.write(toFile: ".dockerignore", atomically: true, encoding: .utf8)
+        } catch {
+            throw SwiftDockerError.failedToCreateFile(".dockerignore")
+        }
     }
 
     /// Load template file
@@ -101,10 +109,14 @@ class SwiftDocker {
     /// - Parameter name: name of template
     func editTemplate(_ name: String = "template") throws {
         let filename = ".swiftdocker-\(name)"
-        if !FileManager.default.fileExists(atPath: filename) {
-            try Self.dockerfileTemplate.write(toFile: filename, atomically: true, encoding: .utf8)
+        do {
+            if !FileManager.default.fileExists(atPath: filename) {
+                try Self.dockerfileTemplate.write(toFile: filename, atomically: true, encoding: .utf8)
+            }
+            shellNoWait(["open", filename])
+        } catch {
+            throw SwiftDockerError.failedToCreateFile(filename)
         }
-        shellNoWait(["open", filename])
     }
 
     /// Render Dockerfile
@@ -138,8 +150,12 @@ class SwiftDocker {
             executable: executable,
             noSlim: command.noSlim
         )
-        let dockerfile = self.template.render(context)
-        try dockerfile.write(toFile: filename, atomically: true, encoding: .utf8)
+        do {
+            let dockerfile = self.template.render(context)
+            try dockerfile.write(toFile: filename, atomically: true, encoding: .utf8)
+        } catch {
+            throw SwiftDockerError.failedToCreateFile(filename)
+        }
     }
 
     /// Run docker using Dockerfile
