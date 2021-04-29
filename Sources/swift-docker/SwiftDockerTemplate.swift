@@ -46,7 +46,7 @@ extension SwiftDocker {
 
     # Run the executable when the image is run
     ENTRYPOINT ["./{{.}}"]
-    CMD
+    CMD []
 
     {{/executable}}
 
