@@ -4,13 +4,17 @@ Integrate docker into swift command line.
 
 ## Basic Usage
 
-Build a Swift project
+Build a Swift project in docker
 ```
 swift docker build
 ```
 Test a Swift project
 ```
 swift docker test
+```
+Run a Swift project
+```
+swift docker run
 ```
 Choose the version of Swift you want to build/test with
 ```
@@ -43,7 +47,7 @@ swift docker test --  --sanitize=thread
 
 ## Dockerfile Template
 
-It is not possible to create a Dockerfile template that supports all projects. Because of this there is an option to edit the template file used to create your Dockerfile. The following will save a local copy of the template file and open it up into a text editor for you to edit.  
+It is not possible to create a Dockerfile template that supports all projects. Because of this there is an option to edit the template file used to create the Dockerfile. The following will save a local copy of the template file and open it up into a text editor for you to edit.  
 ```
 swift docker edit
 ```
