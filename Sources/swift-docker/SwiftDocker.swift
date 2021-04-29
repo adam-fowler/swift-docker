@@ -36,6 +36,7 @@ class SwiftDocker {
     ///   - args: array of strings representing shell command with args
     ///   - returnStdOut: Should we return stdout
     @discardableResult func shell(_ args: [String], returnStdOut: Bool) -> (Int32, String?) {
+        print(args.joined(separator: " "))
         let task = Process()
         // trap signal so they can be passed onto shell command
         let intSignal = trap(signal: .INT) { _ in
@@ -177,7 +178,13 @@ class SwiftDocker {
     /// Run docker run
     /// - Parameter isExecutable: Are we building an executable
     func runDocker(tag: String) {
-        let args = ["docker", "run", tag]
+        var args = ["docker", "run", tag]
+        for p in self.command.publish {
+            args += ["-p", p]
+        }
+        for e in self.command.env {
+            args += ["-e", e]
+        }
         shell(args, returnStdOut: false)
     }
 
