@@ -25,7 +25,7 @@ swift docker test -i swift:5.2
 
 Currently the easiest way to install `swift-docker` is via [mint](https://github.com/yonaskolb/Mint). Once you have mint installed you can install as follows
 ```
-mint install swift-docker
+mint install adam-fowler/swift-docker
 ```
 
 ## Command line options
