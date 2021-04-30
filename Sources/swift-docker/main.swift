@@ -55,6 +55,10 @@ struct SwiftDockerCommand: ParsableCommand {
     @Option(name: .shortAndLong, help: "Set environment variables")
     var env: [String] = []
 
+    /// environment variables to set while running
+    @Flag(name: .customLong("rm"), help: "Automatically remove the container when it exits")
+    var removeOnExit: Bool = false
+
     /// build or test
     @Argument var operation: BuildOperation
 

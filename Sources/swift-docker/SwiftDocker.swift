@@ -217,6 +217,9 @@ class SwiftDocker {
         for e in self.command.env {
             args += ["-e", e]
         }
+        if self.command.removeOnExit {
+            args.append("--rm")
+        }
         args.append(tag)
         ShellCommand.run(args, returnStdOut: false)
     }
