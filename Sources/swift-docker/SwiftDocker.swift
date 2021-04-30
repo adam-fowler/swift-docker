@@ -22,6 +22,81 @@ class SwiftDocker {
         self.template = try .init(string: Self.dockerfileTemplate)
     }
 
+    /// Run SwiftDocker
+    func run() throws {
+        let d = DispatchGroup()
+        d.enter()
+
+        if command.operation == .edit {
+            try editTemplate()
+            return
+        }
+
+        try loadTemplate()
+        try createBuildFolder()
+        try writeDockerIgnore()
+
+        try SPMPackageLoader().load(FileManager.default.currentDirectoryPath) { result in
+            do {
+                let manifest: Manifest
+                switch result {
+                case .failure(let error):
+                    throw error
+                case .success(let m):
+                    manifest = m
+                }
+                var executable: String? = nil
+                // are we building an executable or library
+                if let product = self.command.product {
+                    if manifest.products.first(where: { $0.name == product })?.type == .executable {
+                        executable = product
+                    }
+                } else if let target = self.command.target {
+                    if manifest.targets.first(where: { $0.name == target })?.type == .executable {
+                        executable = target
+                    }
+                } else if manifest.products.first?.type == .executable {
+                    executable = manifest.products.first?.name
+                }
+                var filename: String = ".build/Dockerfile"
+                if self.command.output {
+                    filename = "Dockerfile"
+                }
+
+                if self.command.operation == .run && executable == nil {
+                    throw SwiftDockerError.runRequiresAnExecutable
+                }
+
+                try self.renderDockerfile(executable: executable, filename: filename)
+
+                // get tag (either commandline option or if executable folder we are running in)
+                var tag: String?
+                if let tag2 = self.command.tag {
+                    tag = tag2
+                } else {
+                    if executable != nil {
+                        let path = FileManager.default.currentDirectoryPath.split(separator: "/")
+                        tag = path.last.map({ String($0) })
+                    }
+                }
+
+                // only run docker if not outputting Dockerfile
+                if self.command.output == false {
+                    self.buildDocker(tag: tag)
+                }
+
+                if self.command.operation == .run, let tag = tag {
+                    self.runDocker(tag: tag)
+                }
+            } catch {
+                print("\(error)")
+            }
+
+            d.leave()
+        }
+        d.wait()
+    }
+
     /// Create .build folder
     func createBuildFolder() throws {
         do {
@@ -144,81 +219,5 @@ class SwiftDocker {
         }
         args.append(tag)
         ShellCommand.run(args, returnStdOut: false)
-    }
-
-    /// Run SwiftDocker
-    func run() throws {
-        let d = DispatchGroup()
-        d.enter()
-
-
-        if command.operation == .edit {
-            try editTemplate()
-            return
-        }
-
-        try loadTemplate()
-        try createBuildFolder()
-        try writeDockerIgnore()
-        
-        try SPMPackageLoader().load(FileManager.default.currentDirectoryPath) { result in
-            do {
-                let manifest: Manifest
-                switch result {
-                case .failure(let error):
-                    throw error
-                case .success(let m):
-                    manifest = m
-                }
-                var executable: String? = nil
-                // are we building an executable or library
-                if let product = self.command.product {
-                    if manifest.products.first(where: { $0.name == product })?.type == .executable {
-                        executable = product
-                    }
-                } else if let target = self.command.target {
-                    if manifest.targets.first(where: { $0.name == target })?.type == .executable {
-                        executable = target
-                    }
-                } else if manifest.products.first?.type == .executable {
-                    executable = manifest.products.first?.name
-                }
-                var filename: String = ".build/Dockerfile"
-                if self.command.output {
-                    filename = "Dockerfile"
-                }
-
-                if self.command.operation == .run && executable == nil {
-                    throw SwiftDockerError.runRequiresAnExecutable
-                }
-
-                try self.renderDockerfile(executable: executable, filename: filename)
-
-                // get tag (either commandline option or if executable folder we are running in)
-                var tag: String?
-                if let tag2 = self.command.tag {
-                    tag = tag2
-                } else {
-                    if executable != nil {
-                        let path = FileManager.default.currentDirectoryPath.split(separator: "/")
-                        tag = path.last.map({ String($0) })
-                    }
-                }
-
-                // only run docker if not outputting Dockerfile
-                if self.command.output == false {
-                    self.buildDocker(tag: tag)
-                }
-
-                if self.command.operation == .run, let tag = tag {
-                    self.runDocker(tag: tag)
-                }
-            } catch {
-                print("\(error)")
-            }
-
-            d.leave()
-        }
-        d.wait()
     }
 }
