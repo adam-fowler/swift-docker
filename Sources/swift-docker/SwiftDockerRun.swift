@@ -10,17 +10,17 @@ extension SwiftDockerCommand.Run {
     /// Run docker run
     /// - Parameter isExecutable: Are we building an executable
     func runDocker(tag: String) {
-/*        var args = ["docker", "run"]
-        for p in self.command.publish {
+        var args = ["docker", "run"]
+        for p in self.publish {
             args += ["-p", p]
         }
-        for e in self.command.env {
+        for e in self.env {
             args += ["-e", e]
         }
-        if self.command.removeOnExit {
+        if self.removeOnExit {
             args.append("--rm")
         }
         args.append(tag)
-        ShellCommand.run(args, returnStdOut: false)*/
+        ShellCommand.run(args, returnStdOut: false)
     }
 }

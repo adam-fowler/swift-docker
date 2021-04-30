@@ -21,7 +21,7 @@ protocol SwiftDockerBuild {
 extension SwiftDockerBuild {
 
     /// Run SwiftDocker build
-    func runBuild() throws {
+    func runBuild(_ postBuild: ((String?) -> ())? = nil) throws {
         let d = DispatchGroup()
         d.enter()
 
@@ -81,9 +81,7 @@ extension SwiftDockerBuild {
                     self.buildDocker(tag: tag)
                 }
 
-                if self.operation == .run, let tag = tag {
-                    self.runDocker(tag: tag)
-                }
+                postBuild?(tag)
             } catch {
                 print("\(error)")
             }
