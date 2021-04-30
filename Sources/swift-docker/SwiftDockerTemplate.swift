@@ -1,6 +1,6 @@
 
-extension SwiftDocker {
-    static var dockerfileTemplate: String {"""
+enum SwiftDocker {
+    static var dockerFileTemplate: String {"""
     # ================================
     # Build image
     # ================================

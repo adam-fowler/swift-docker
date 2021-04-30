@@ -16,57 +16,88 @@ enum BuildConfiguration: String, ExpressibleByArgument {
 
 struct SwiftDockerCommand: ParsableCommand {
     static var configuration = CommandConfiguration(
-        commandName: "swift-docker"
+        commandName: "swift-docker",
+        subcommands: [Build.self, Test.self, Run.self, Edit.self]
     )
 
-    /// Docker image to use as basis for building image
-    @Option(name: .shortAndLong, help: "Docker image to use")
-    var image: String = "swift:5.4"
+    struct BuildOptions: ParsableArguments {
+        /// Docker image to use as basis for building image
+        @Option(name: .shortAndLong, help: "Docker image to use")
+        var image: String = "swift:5.4"
 
-    /// Output Dockerfile instead of build it
-    @Flag(name: .shortAndLong, help: "Output Dockerfile instead of building image")
-    var output: Bool = false
+        /// Output Dockerfile instead of build it
+        @Flag(name: .shortAndLong, help: "Output Dockerfile instead of building image")
+        var output: Bool = false
 
-    /// name to tag docker image
-    @Option(name: .shortAndLong, help: "Specify repository and tag for generated docker image. Will default to directory name if not specified.")
-    var tag: String?
+        /// name to tag docker image
+        @Option(name: .shortAndLong, help: "Specify repository and tag for generated docker image. Will default to directory name if not specified.")
+        var tag: String?
 
-    /// whether to use slim version of swift docker image
-    @Flag(name: .shortAndLong, help: "Disable using of slim version of swift docker image for running.")
-    var noSlim: Bool = false
+        /// whether to use slim version of swift docker image
+        @Flag(name: .shortAndLong, help: "Disable using of slim version of swift docker image for running.")
+        var noSlim: Bool = false
 
-    /// build configuration
-    @Option(name: .shortAndLong, help: "Build configuration")
-    var configuration: BuildConfiguration?
+        /// build configuration
+        @Option(name: .shortAndLong, help: "Build configuration")
+        var configuration: BuildConfiguration?
 
-    /// product to build
-    @Option(name: .long, help: "Build the specified product")
-    var product: String?
+        /// product to build
+        @Option(name: .long, help: "Build the specified product")
+        var product: String?
 
-    /// target to build
-    @Option(name: .long, help: "Build the specified target")
-    var target: String?
+        /// target to build
+        @Option(name: .long, help: "Build the specified target")
+        var target: String?
 
-    /// ports to expose
-    @Option(name: .shortAndLong, help: "Publish a container's port(s) to the host")
-    var publish: [String] = []
+        /// remaining options are passed through to swift build/test operations
+        @Argument var swiftOptions: [String] = []
+    }
 
-    /// environment variables to set while running
-    @Option(name: .shortAndLong, help: "Set environment variables")
-    var env: [String] = []
+    struct Build: ParsableCommand, SwiftDockerBuild {
+        var operation: BuildOperation { .build }
 
-    /// environment variables to set while running
-    @Flag(name: .customLong("rm"), help: "Automatically remove the container when it exits")
-    var removeOnExit: Bool = false
+        @OptionGroup var buildOptions: BuildOptions
 
-    /// build or test
-    @Argument var operation: BuildOperation
+        func run() throws {
+            try runBuild()
+        }
+    }
 
-    /// remaining options are passed through to swift build/test operations
-    @Argument var swiftOptions: [String] = []
+    struct Test: ParsableCommand, SwiftDockerBuild {
+        var operation: BuildOperation { .test }
 
-    func run() throws {
-        try SwiftDocker(command: self).run()
+        @OptionGroup var buildOptions: BuildOptions
+
+        func run() throws {
+            try runBuild()
+        }
+    }
+
+    struct Run: ParsableCommand, SwiftDockerBuild {
+        var operation: BuildOperation { .run }
+
+        @OptionGroup var buildOptions: BuildOptions
+
+        /// ports to expose
+        @Option(name: .shortAndLong, help: "Publish a container's port(s) to the host")
+        var publish: [String] = []
+
+        /// environment variables to set while running
+        @Option(name: .shortAndLong, help: "Set environment variables")
+        var env: [String] = []
+
+        /// environment variables to set while running
+        @Flag(name: .customLong("rm"), help: "Automatically remove the container when it exits")
+        var removeOnExit: Bool = false
+
+        func run() throws {
+            try runBuild()
+        }
+
+    }
+
+    struct Edit: ParsableCommand {
+        var operation: BuildOperation { .edit }
     }
 }
 
