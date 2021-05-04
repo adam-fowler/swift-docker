@@ -51,8 +51,11 @@ extension SwiftDockerBuild {
                     if manifest.targets.first(where: { $0.name == target })?.type == .executable {
                         executable = target
                     }
-                } else if manifest.products.first?.type == .executable {
-                    executable = manifest.products.first?.name
+                } else {
+                    if self.operation == .run {
+                        executable = manifest.products.first(where: { $0.type == .executable })?.name ??
+                            manifest.targets.first(where: { $0.type == .executable })?.name
+                    }
                 }
                 var filename: String = ".build/Dockerfile"
                 if self.buildOptions.output {
@@ -177,22 +180,5 @@ extension SwiftDockerBuild {
         }
         args.append(".")
         ShellCommand.run(args, returnStdOut: false)
-    }
-
-    /// Run docker run
-    /// - Parameter isExecutable: Are we building an executable
-    func runDocker(tag: String) {
-/*        var args = ["docker", "run"]
-        for p in self.command.publish {
-            args += ["-p", p]
-        }
-        for e in self.command.env {
-            args += ["-e", e]
-        }
-        if self.command.removeOnExit {
-            args.append("--rm")
-        }
-        args.append(tag)
-        ShellCommand.run(args, returnStdOut: false)*/
     }
 }
