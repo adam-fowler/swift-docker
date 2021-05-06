@@ -1,223 +1,121 @@
-//
-//  SwiftDocker.swift
-//  
-//
-//  Created by Adam Fowler on 27/04/2021.
-//
-#if os(macOS)
-import Darwin
-#else
-import Glibc
-#endif
+
+import ArgumentParser
 import Foundation
-import HummingbirdMustache
-import PackageModel
 
-class SwiftDocker {
-    let command: SwiftDockerCommand
-    var template: HBMustacheTemplate
+enum BuildOperation: String, ExpressibleByArgument {
+    case build
+    case test
+    case edit
+    case run
+}
 
-    init(command: SwiftDockerCommand) throws {
-        self.command = command
-        self.template = try .init(string: Self.dockerfileTemplate)
+enum BuildConfiguration: String, ExpressibleByArgument {
+    case debug
+    case release
+}
+
+struct SwiftDockerCommand: ParsableCommand {
+    static var configuration = CommandConfiguration(
+        commandName: "swift-docker",
+        subcommands: [Build.self, Test.self, Run.self, Edit.self]
+    )
+
+    struct BuildOptions: ParsableArguments {
+        /// Docker image to use as basis for building image
+        @Option(name: .shortAndLong, help: "Docker image to use")
+        var image: String = "swift:5.4"
+
+        /// Output Dockerfile instead of build it
+        @Flag(name: .shortAndLong, help: "Output Dockerfile instead of building image")
+        var output: Bool = false
+
+        /// name to tag docker image
+        @Option(name: .shortAndLong, help: "Specify repository and tag for generated docker image. Will default to directory name if not specified.")
+        var tag: String?
+
+        /// whether to use slim version of swift docker image
+        @Flag(name: .shortAndLong, help: "Disable using of slim version of swift docker image for running.")
+        var noSlim: Bool = false
+
+        /// build configuration
+        @Option(name: .shortAndLong, help: "Build configuration")
+        var configuration: BuildConfiguration?
+
+        /// product to build
+        @Option(name: .long, help: "Build the specified product")
+        var product: String?
+
+        /// target to build
+        @Option(name: .long, help: "Build the specified target")
+        var target: String?
+
+        /// remaining options are passed through to swift build/test operations
+        @Argument var swiftOptions: [String] = []
     }
 
-    /// Run SwiftDocker
-    func run() throws {
-        let d = DispatchGroup()
-        d.enter()
+    struct Build: ParsableCommand, SwiftDockerBuild {
+        static var configuration = CommandConfiguration(
+            abstract: "Build product"
+        )
 
-        if command.operation == .edit {
-            try editTemplate()
-            return
+        var operation: BuildOperation { .build }
+
+        @OptionGroup var buildOptions: BuildOptions
+
+        func run() throws {
+            try runBuild()
         }
+    }
 
-        try loadTemplate()
-        try createBuildFolder()
-        try writeDockerIgnore()
+    struct Test: ParsableCommand, SwiftDockerBuild {
+        static var configuration = CommandConfiguration(
+            abstract: "Test product"
+        )
 
-        try SPMPackageLoader().load(FileManager.default.currentDirectoryPath) { result in
-            do {
-                let manifest: Manifest
-                switch result {
-                case .failure(let error):
-                    throw error
-                case .success(let m):
-                    manifest = m
-                }
-                var executable: String? = nil
-                // are we building an executable or library
-                if let product = self.command.product {
-                    if manifest.products.first(where: { $0.name == product })?.type == .executable {
-                        executable = product
-                    }
-                } else if let target = self.command.target {
-                    if manifest.targets.first(where: { $0.name == target })?.type == .executable {
-                        executable = target
-                    }
-                } else if manifest.products.first?.type == .executable {
-                    executable = manifest.products.first?.name
-                }
-                var filename: String = ".build/Dockerfile"
-                if self.command.output {
-                    filename = "Dockerfile"
-                }
+        var operation: BuildOperation { .test }
 
-                if self.command.operation == .run && executable == nil {
-                    throw SwiftDockerError.runRequiresAnExecutable
-                }
+        @OptionGroup var buildOptions: BuildOptions
 
-                try self.renderDockerfile(executable: executable, filename: filename)
+        func run() throws {
+            try runBuild()
+        }
+    }
 
-                // get tag (either commandline option or if executable folder we are running in)
-                var tag: String?
-                if let tag2 = self.command.tag {
-                    tag = tag2
-                } else {
-                    if executable != nil {
-                        let path = FileManager.default.currentDirectoryPath.split(separator: "/")
-                        tag = path.last.map({ String($0) })
-                    }
-                }
+    struct Run: ParsableCommand, SwiftDockerBuild {
+        static var configuration = CommandConfiguration(
+            abstract: "Build and run product"
+        )
 
-                // only run docker if not outputting Dockerfile
-                if self.command.output == false {
-                    self.buildDocker(tag: tag)
-                }
+        var operation: BuildOperation { .run }
 
-                if self.command.operation == .run, let tag = tag {
+        @OptionGroup var buildOptions: BuildOptions
+
+        /// ports to expose
+        @Option(name: .shortAndLong, help: "Publish a container's port(s) to the host")
+        var publish: [String] = []
+
+        /// environment variables to set while running
+        @Option(name: .shortAndLong, help: "Set environment variables")
+        var env: [String] = []
+
+        /// environment variables to set while running
+        @Flag(name: .customLong("rm"), help: "Automatically remove the container when it exits")
+        var removeOnExit: Bool = false
+
+        func run() throws {
+            try runBuild() { tag in
+                if let tag = tag {
                     self.runDocker(tag: tag)
                 }
-            } catch {
-                print("\(error)")
             }
-
-            d.leave()
         }
-        d.wait()
+
     }
 
-    /// Create .build folder
-    func createBuildFolder() throws {
-        do {
-            if !FileManager.default.fileExists(atPath: ".build") {
-                try FileManager.default.createDirectory(atPath: ".build", withIntermediateDirectories: true)
-            }
-        } catch {
-            throw SwiftDockerError.failedToCreateFolder(".build")
-        }
-    }
-
-    /// Create .dockerignore file
-    func writeDockerIgnore() throws {
-        do {
-            guard !FileManager.default.fileExists(atPath: ".dockerignore") else { return }
-            let dockerIgnore = """
-                .build
-                .git
-                """
-            try dockerIgnore.write(toFile: ".dockerignore", atomically: true, encoding: .utf8)
-        } catch {
-            throw SwiftDockerError.failedToCreateFile(".dockerignore")
-        }
-    }
-
-    /// Load template file
-    /// - Parameter name: template name
-    func loadTemplate(_ name: String = "template") throws {
-        let filename = ".swiftdocker-\(name)"
-        let data: Data
-        do {
-            guard FileManager.default.fileExists(atPath: filename) else { return }
-            data = try Data(contentsOf: URL(fileURLWithPath: filename))
-            print("Using template \(filename)")
-        } catch {
-            return
-        }
-        let templateString = String(decoding: data, as: Unicode.UTF8.self)
-        self.template = try .init(string: templateString)
-    }
-
-    /// Create template file if it doesn't exist and open in editor
-    /// - Parameter name: name of template
-    func editTemplate(_ name: String = "template") throws {
-        let filename = ".swiftdocker-\(name)"
-        do {
-            if !FileManager.default.fileExists(atPath: filename) {
-                try Self.dockerfileTemplate.write(toFile: filename, atomically: true, encoding: .utf8)
-            }
-            ShellCommand.runNoWait(["open", filename])
-        } catch {
-            throw SwiftDockerError.failedToCreateFile(filename)
-        }
-    }
-
-    /// Render Dockerfile
-    /// - Parameters:
-    ///   - executable: Name of executable we are building, nil means we are building a library
-    ///   - filename: Filename to save to
-    func renderDockerfile(executable: String?, filename: String) throws {
-        struct RenderContext {
-            let image: String
-            let operation: BuildOperation
-            let options: String?
-            let configuration: BuildConfiguration?
-            let executable: String?
-            let noSlim: Bool
-        }
-        var options = command.swiftOptions.joined(separator: " ")
-        if let product = self.command.product {
-            options = "--product \(product) \(options)"
-        } else if let target = self.command.target {
-            options = "--target \(target) \(options)"
-        }
-        if let configuration = self.command.configuration {
-            options = "-c \(configuration) \(options)"
-        }
-
-        var operation = self.command.operation
-        // if we are wanting to run an executable use swift build to build it
-        if operation == .run {
-            operation = .build
-        }
-        let context = RenderContext(
-            image: command.image,
-            operation: operation,
-            options: options,
-            configuration: self.command.configuration,
-            executable: executable,
-            noSlim: command.noSlim
+    struct Edit: ParsableCommand {
+        static var configuration = CommandConfiguration(
+            abstract: "Edit Dockerfile template"
         )
-        do {
-            let dockerfile = self.template.render(context)
-            try dockerfile.write(toFile: filename, atomically: true, encoding: .utf8)
-        } catch {
-            throw SwiftDockerError.failedToCreateFile(filename)
-        }
-    }
-
-    /// Run docker build using Dockerfile
-    /// - Parameter isExecutable: Are we building an executable
-    func buildDocker(tag: String?) {
-        var args = ["docker", "build", "-f", ".build/Dockerfile"]
-        if let tag = tag {
-            args += ["-t", tag]
-        }
-        args.append(".")
-        ShellCommand.run(args, returnStdOut: false)
-    }
-
-    /// Run docker run
-    /// - Parameter isExecutable: Are we building an executable
-    func runDocker(tag: String) {
-        var args = ["docker", "run"]
-        for p in self.command.publish {
-            args += ["-p", p]
-        }
-        for e in self.command.env {
-            args += ["-e", e]
-        }
-        args.append(tag)
-        ShellCommand.run(args, returnStdOut: false)
     }
 }
+
