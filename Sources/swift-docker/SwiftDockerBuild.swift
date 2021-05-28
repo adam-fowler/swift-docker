@@ -71,14 +71,26 @@ extension SwiftDockerBuild {
                 // get tag (either commandline option or if executable folder we are running in)
                 var tag: String?
                 if let tag2 = self.buildOptions.tag {
+                    guard let first = tag2.first,
+                          validTagStartCharacter.contains(first),
+                          tag2.first(where: { !validTagCharacters.contains($0) }) == nil else {
+                        throw SwiftDockerError.invalidTagCharacters
+                    }
                     tag = tag2
                 } else {
                     if executable != nil {
                         let path = FileManager.default.currentDirectoryPath.split(separator: "/")
                         tag = path.last.map({ String($0) })
+                        if var tag2 = tag {
+                            tag2 = tag2.lowercased()
+                            // remove unrecognised characters
+                            let chars = tag2.compactMap {
+                                return validTagCharacters.contains($0) ? $0 : nil
+                           }
+                            tag = String(chars)
+                        }
                     }
                 }
-
                 // only run docker if not outputting Dockerfile
                 if self.buildOptions.output == false {
                     self.buildDocker(tag: tag)
@@ -181,4 +193,8 @@ extension SwiftDockerBuild {
         args.append(".")
         ShellCommand.run(args, returnStdOut: false)
     }
+
 }
+
+private let validTagStartCharacter: Set<Character> = .init("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".map { $0 })
+private let validTagCharacters: Set<Character> = .init("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.".map { $0 })
