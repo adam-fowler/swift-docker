@@ -93,10 +93,13 @@ extension SwiftDockerBuild {
                 }
                 // only run docker if not outputting Dockerfile
                 if self.buildOptions.output == false {
-                    self.buildDocker(tag: tag)
+                    let rt = self.buildDocker(tag: tag)
+                    // only run postBuild if buildDocker was successful
+                    if rt == 0 {
+                        postBuild?(tag)
+                    }
                 }
 
-                postBuild?(tag)
             } catch {
                 print("\(error)")
             }
@@ -185,13 +188,13 @@ extension SwiftDockerBuild {
 
     /// Run docker build using Dockerfile
     /// - Parameter isExecutable: Are we building an executable
-    func buildDocker(tag: String?) {
+    func buildDocker(tag: String?) -> Int {
         var args = ["docker", "build", "-f", ".build/Dockerfile"]
         if let tag = tag {
             args += ["-t", tag]
         }
         args.append(".")
-        ShellCommand.run(args, returnStdOut: false)
+        return numericCast(ShellCommand.run(args, returnStdOut: false).0)
     }
 
 }
