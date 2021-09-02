@@ -193,6 +193,9 @@ extension SwiftDockerBuild {
         if let tag = tag {
             args += ["-t", tag]
         }
+        for e in self.buildOptions.env {
+            args += ["--build-arg", e]
+        }
         args.append(".")
         return numericCast(ShellCommand.run(args, returnStdOut: false).0)
     }

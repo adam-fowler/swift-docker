@@ -14,7 +14,7 @@ extension SwiftDockerCommand.Run {
         for p in self.publish {
             args += ["-p", p]
         }
-        for e in self.env {
+        for e in self.buildOptions.env {
             args += ["-e", e]
         }
         if self.removeOnExit {

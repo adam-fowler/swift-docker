@@ -49,6 +49,10 @@ struct SwiftDockerCommand: ParsableCommand {
         @Option(name: .long, help: "Build the specified target")
         var target: String?
 
+        /// environment variables to set while running
+        @Option(name: .shortAndLong, help: "Set environment variables")
+        var env: [String] = []
+
         /// remaining options are passed through to swift build/test operations
         @Argument var swiftOptions: [String] = []
     }
@@ -93,10 +97,6 @@ struct SwiftDockerCommand: ParsableCommand {
         /// ports to expose
         @Option(name: .shortAndLong, help: "Publish a container's port(s) to the host")
         var publish: [String] = []
-
-        /// environment variables to set while running
-        @Option(name: .shortAndLong, help: "Set environment variables")
-        var env: [String] = []
 
         /// environment variables to set while running
         @Flag(name: .customLong("rm"), help: "Automatically remove the container when it exits")
