@@ -40,11 +40,16 @@ struct SPMPackageLoader {
             print("error: Package version is below minimum, trying minimum")
             toolsVersion = .minimumRequired
         }
+        let identityResolver = DefaultIdentityResolver()
         loader.load(
-            package: AbsolutePath(path),
-            baseURL: path,
-            toolsVersion: toolsVersion,
+            at: AbsolutePath(path),
+            packageIdentity: identityResolver.resolveIdentity(for: path),
             packageKind: .local,
+            packageLocation: path,
+            version: nil,
+            revision: nil,
+            toolsVersion: toolsVersion,
+            identityResolver: identityResolver,
             fileSystem: localFileSystem,
             on: DispatchQueue.global()
         ) { result in

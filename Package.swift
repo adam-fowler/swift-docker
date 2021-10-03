@@ -5,14 +5,14 @@ import PackageDescription
 
 let package = Package(
     name: "swift-docker",
-    platforms: [.macOS(.v10_13)],
+    platforms: [.macOS(.v10_15)],
     products: [
         .executable(name: "swift-docker", targets: ["swift-docker"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.3.0"),
-        .package(url: "https://github.com/hummingbird-project/hummingbird-mustache.git", from: "0.5.0"),
-        .package(name: "SwiftPM", url: "https://github.com/apple/swift-package-manager.git", .branch("swift-5.4-RELEASE")),
+        .package(url: "https://github.com/hummingbird-project/hummingbird-mustache.git", from: "1.0.0"),
+        .package(name: "SwiftPM", url: "https://github.com/apple/swift-package-manager.git", .branch("swift-5.5-RELEASE")),
     ],
     targets: [
         .target(
