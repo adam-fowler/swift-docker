@@ -23,7 +23,7 @@ struct SwiftDockerCommand: ParsableCommand {
     struct BuildOptions: ParsableArguments {
         /// Docker image to use as basis for building image
         @Option(name: .shortAndLong, help: "Docker image to use")
-        var image: String = "swift:5.4"
+        var image: String = "swift:5.5"
 
         /// Output Dockerfile instead of build it
         @Flag(name: .shortAndLong, help: "Output Dockerfile instead of building image")
